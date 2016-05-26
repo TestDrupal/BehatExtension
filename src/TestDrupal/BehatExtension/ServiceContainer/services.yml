@@ -1,0 +1,43 @@
+#This file is used by the Symfony Service Container
+
+# Parameters can be changed by other services and are used as tokens in services section below.
+parameters:
+  testdrupal.entity_store.class: TestDrupal\BehatExtension\ServiceContainer\EntityStore
+  testdrupal.page_store.class: TestDrupal\BehatExtension\ServiceContainer\PageStore
+  testdrupal.drupal_extension.class: Drupal\DrupalExtension\ServiceContainer\DrupalExtension
+  testdrupal.listener.stores.class: TestDrupal\BehatExtension\Listener\StoresListener
+
+  # Context initializer.
+  testdrupal.context.initializer.class: TestDrupal\BehatExtension\Context\Initializer\TestDrupalAwareInitializer
+
+  testdrupal.parameters: {}
+  testdrupal.default_contexts_map: {}
+
+services:
+
+  # Register the EntityStore class as a Service.
+  testdrupal.entity_store:
+    class: '%testdrupal.entity_store.class%'
+
+  # Register the EntityStore class as a Service.
+  testdrupal.page_store:
+    class: '%testdrupal.page_store.class%'
+
+  # Set our Initializer class so we can inject EntityStore into each EntityAware Context.
+  testdrupal.context.initializer:
+    class: '%testdrupal.context.initializer.class%'
+    arguments:
+      - '@testdrupal.entity_store'
+      - '@testdrupal.page_store'
+      - '%testdrupal.parameters%'
+      - '%testdrupal.default_contexts_map%'
+    tags:
+      - { name: context.initializer }
+
+  testdrupal.listener.stores:
+    class: '%testdrupal.listener.stores.class%'
+    calls:
+      - [ setStore,['%testdrupal.entity_store.class%', '@testdrupal.entity_store']]
+      - [ setStore,['%testdrupal.page_store.class%', '@testdrupal.page_store']]
+    tags:
+      - { name: event_dispatcher.subscriber, priority: 0 }
