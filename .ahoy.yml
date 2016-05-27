@@ -2,19 +2,78 @@ ahoyapi: v1
 version: 0.0.0
 commands:
   install-drupal:
-    usage: Install a drupal site for tesing purposes. Requires that $DRUPAL_VERSION and $DB_URL be set.
+    usage: Install a drupal site for tesing purposes. Requires that $DRUPAL_VERSION be set.
     cmd: |
+      mysql_ip=`ahoy exec printf '$DB_1_PORT_3306_TCP_ADDR'`
+      if [ -z ${mysql_ip+x} ]; then
+        echo "Couldn't find the docker mysql ip address. Are the docker containers running?"
+        exit 1
+      fi
       if [ -z ${DRUPAL_VERSION+x} ]; then
         echo "No \$DRUPAL_VERSION is set"
         exit 1
       fi
-      if [ -z ${DB_URL+x} ]; then
-        echo "No \$DB_URL is set"
-        exit 1
+      if [ -d $PWD/docroot ]; then
+        chmod -R u+w $PWD/docroot
+        rm -rf $PWD/docroot
       fi
-      if [ -d $PWD/drupal ]; then
-        chown -R 777 $PWD/drupal
-        rm -rf $PWD/drupal
+      ahoy -v drush --debug dl "drupal-$DRUPAL_VERSION" --dev --all --drupal-project-rename=docroot
+      ahoy -v drush --debug --yes site-install --db-url=mysql://root:admin123@$mysql_ip/drupal
+  test:
+    usage: Start the docker-compose containers.
+    cmd: |
+      ahoy up
+      ahoy exec composer install
+      ahoy exec vendor/bin/behat -c behat.docker.yml {{args}}
+  up:
+    cmd: "docker-compose up -d"
+    usage: Start the docker-compose containers.
+  stop:
+    cmd: "docker-compose stop"
+    usage: Stop the docker-compose containers (non-destructive).
+  ps:
+    cmd: "docker-compose ps"
+    usage: List the running docker-compose containers.
+  ip:
+    cmd: "docker-machine ip default"
+    usage: Show the ip address f the default docker machine VM
+  reset:
+    cmd: "docker-compose stop && docker-compose rm && ahoy up"
+    usage: Start the docker compose-containers.
+  drush:
+    cmd: |
+      if [ -d $PWD/docroot ]; then
+        drush_root="--root=/var/www/docroot"
+      else
+        drush_root=""
       fi
-      drush --quiet dl "$DRUPAL_VERSION" --dev --all --drupal-project-rename=drupal
-      drush --yes --root=$PWD/drupal site-install --db-url="$DB_URL"
+      echo "Drush root = $drush_root"
+      docker exec -it $(docker-compose ps -q cli) bash -c 'drush $0 $1' $drush_root "{{args}}"
+    usage: run drush commands in the cli service container.
+  composer:
+    cmd: docker exec -it $(docker-compose ps -q cli) bash -c 'cd /var/www/docroot && composer {{args}}'
+    usage: run drush commands in the cli service container.
+  exec:
+    cmd: docker exec -it "$(docker-compose ps -q cli)" bash -c '{{args}}'
+    usage: run drush commands in the cli service container.
+  mysql:
+    cmd: "docker exec -it $(docker-compose ps -q cli) bash -c 'mysql -u$DB_ENV_MYSQL_USER -p$DB_ENV_MYSQL_PASSWORD -h$DB_PORT_3306_TCP_ADDR $DB_ENV_MYSQL_DATABASE'"
+    usage: Connect to the default mysql database.
+  mysql-import:
+    cmd: "docker exec -i $(docker-compose ps -q cli) bash -c 'mysql -u$DB_ENV_MYSQL_USER -p$DB_ENV_MYSQL_PASSWORD -h$DB_PORT_3306_TCP_ADDR $DB_ENV_MYSQL_DATABASE'"
+    usage: Pipe in a sql file.  `ahoy mysql-import < backups/live.sql`
+  mysql-dump:
+    cmd: "docker exec -it $(docker-compose ps -q cli) bash -c 'mysqldump -u$DB_ENV_MYSQL_USER -p$DB_ENV_MYSQL_PASSWORD -h$DB_PORT_3306_TCP_ADDR $DB_ENV_MYSQL_DATABASE'"
+    usage: Dump data out into a file. `ahoy mysql-import > backups/local.sql`
+  behat:
+    cmd: "docker exec -it $(docker-compose ps -q cli) bash -c 'cd tests/behat && bin/behat -p docker {{args}}'"
+    usage: Run the behat tests
+  behat-init:
+    cmd: "docker exec -it $(docker-compose ps -q cli) bash -c 'cd tests/behat && composer install'"
+    usage: Run the behat tests
+  reinstall:
+    cmd: "ahoy drush -- si minimal -y && ahoy drush -- en custom_config -y && ahoy drush --  fra -y && ahoy drush cc all"
+    usage: Reinstall a fresh version of the site.
+  updb:
+    cmd: "ahoy drush -- updb -y && ahoy drush cc all"
+    usage: Install a backup, then run updb and cc all.

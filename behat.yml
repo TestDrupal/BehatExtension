@@ -1,0 +1,41 @@
+default:
+  suites:
+     default:
+        contexts:
+          - ArticleContext:
+              contexts_map:
+                mink: 'Drupal\DrupalExtension\Context\MinkContext'
+          - Drupal\DrupalExtension\Context\MinkContext
+          - CustomerContext
+          - Drupal\DrupalExtension\Context\DrupalContext
+          - Drupal\DrupalExtension\Context\MessageContext
+          - TestDrupal\BehatExtension\Context\PageContext
+          - Devinci\DevinciExtension\Context\DebugContext:
+              asset_dump_path: %paths.base%/assets
+          - Devinci\DevinciExtension\Context\JavascriptContext:
+              maximum_wait: 30
+  formatters:
+    pretty:
+      output_styles:
+        comment:    [default, default , [conceal]]
+  gherkin:
+    filters:
+      tags: ~@fixme
+  extensions:
+    Behat\MinkExtension:
+      default_session: 'goutte'
+      browser_name: chrome
+      files_path: %paths.base%/files
+    Drupal\DrupalExtension:
+      drupal:
+        drupal_root: %paths.base%/../docroot
+      api_driver: 'drupal'
+      # @todo fixup these regions for use with new theme. Updated navigation only
+    TestDrupal\BehatExtension:
+      default_contexts_map:
+        mink: Drupal\DrupalExtension\Context\MinkContext
+        drupal: Drupal\DrupalExtension\Context\DrupalContext
+        js: Devinci\DevinciExtension\Context\JavascriptContext
+        page: TestDrupal\BehatExtension\Context\PageContext
+
+
