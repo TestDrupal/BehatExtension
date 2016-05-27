@@ -1,0 +1,20 @@
+ahoyapi: v1
+version: 0.0.0
+commands:
+  install-drupal:
+    usage: Install a drupal site for tesing purposes. Requires that $DRUPAL_VERSION and $DB_URL be set.
+    cmd: |
+      if [ -z ${DRUPAL_VERSION+x} ]; then
+        echo "No \$DRUPAL_VERSION is set"
+        exit 1
+      fi
+      if [ -z ${DB_URL+x} ]; then
+        echo "No \$DB_URL is set"
+        exit 1
+      fi
+      if [ -d $PWD/drupal ]; then
+        chown -R 777 $PWD/drupal
+        rm -rf $PWD/drupal
+      fi
+      drush --quiet dl "$DRUPAL_VERSION" --dev --all --drupal-project-rename=drupal
+      drush --yes --root=$PWD/drupal site-install --db-url="$DB_URL"
