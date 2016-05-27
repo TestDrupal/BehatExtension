@@ -1,6 +1,7 @@
 ## Customize the test machine
 machine:
-
+  services:
+      - docker
   # Drupal 8 currently requires php 5.5.9
   # See https://www.drupal.org/requirements
   php:
