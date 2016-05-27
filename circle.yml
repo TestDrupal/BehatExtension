@@ -1,9 +1,9 @@
 ## Customize the test machine
 machine:
- pre:
-   - curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
- services:
-      - docker
+  pre:
+    - curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
+  services:
+    - docker
   # Drupal 8 currently requires php 5.5.9
   # See https://www.drupal.org/requirements
   php:
@@ -43,6 +43,7 @@ dependencies:
     - mkdir $CIRCLE_ARTIFACTS/junit
     # Install ahoy
     - sudo wget -q https://github.com/devinci-code/ahoy/releases/download/1.1.0/ahoy-`uname -s`-amd64 -O /usr/local/bin/ahoy && sudo chown $USER /usr/local/bin/ahoy && chmod +x /usr/local/bin/ahoy
+    - ahoy up
     - DRUPAL_VERSION=8.2.x ahoy install-drupal
     # Run a webserver using drush.
     - 'ahoy drush --yes runserver :8888':
