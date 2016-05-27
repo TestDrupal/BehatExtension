@@ -16,7 +16,7 @@ machine:
 checkout:
   post:
     # Remove the extra composer stuff that circleci loads and that is causing conflicts with drush.
-    - rm -rf ~/.composer
+    #- rm -rf ~/.composer
 
 ## Customize dependencies
 dependencies:
@@ -29,7 +29,7 @@ dependencies:
   cache_directories:
      #- "dkan/test/vendor"
      #- "~/.composer"
-     - "~/.drush"
+     #- "~/.drush"
      # Disable caching sql install backups for now.
      #- "backups"
      #- "dkan/test/sites/default"
@@ -38,27 +38,17 @@ dependencies:
   override:
     - printenv
     - mkdir $CIRCLE_ARTIFACTS/junit
-    - 'PATH=/home/ubuntu/.config/composer/vendor/bin:$PATH bash dkan-init.sh dkan --deps --build=$DATABASE_URL'
+    # Install ahoy
+    - sudo wget -q https://github.com/devinci-code/ahoy/releases/download/1.1.0/ahoy-`uname -s`-amd64 -O /usr/local/bin/ahoy && sudo chown $USER /usr/local/bin/ahoy && chmod +x /usr/local/bin/ahoy
+    - DRUPAL_VERSION=8.2.x ahoy install-drupal
     # Run a webserver using drush.
-    - 'PATH=/home/ubuntu/.config/composer/vendor/bin:$PATH ahoy drush --yes runserver :8888':
-        background: true
-
-    # Setup display for selenium
-    #- sh -e /etc/init.d/xvfb start
-    #- sleep 3
-
-    - wget http://selenium-release.storage.googleapis.com/2.49/selenium-server-standalone-2.49.1.jar
-    - java -jar selenium-server-standalone-2.49.1.jar -p 4444 :
-        background: true
-  post:
-     - sudo apt-get install -y x11vnc
-     - x11vnc -forever -nopw:
+    - 'ahoy drush --yes runserver :8888':
         background: true
 
 ## Customize test commands
 test:
   override:
-    - bash dkan/test/circle-behat.sh docroot/profiles/dkan/test/features:
+    - ahoy test:
         parallel: true
   post:
     - echo $CIRCLE_ARTIFACTS; cp -av dkan/test/assets $CIRCLE_ARTIFACTS:

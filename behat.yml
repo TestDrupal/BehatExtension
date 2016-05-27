@@ -23,12 +23,13 @@ default:
       tags: ~@fixme
   extensions:
     Behat\MinkExtension:
+      goutte: ~
       default_session: 'goutte'
       browser_name: chrome
       files_path: %paths.base%/files
     Drupal\DrupalExtension:
       drupal:
-        drupal_root: %paths.base%/../docroot
+        drupal_root: %paths.base%/docroot
       api_driver: 'drupal'
       # @todo fixup these regions for use with new theme. Updated navigation only
     TestDrupal\BehatExtension:
