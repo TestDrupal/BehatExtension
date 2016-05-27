@@ -54,7 +54,12 @@ commands:
     cmd: docker exec -it $(docker-compose ps -q cli) bash -c 'cd /var/www/docroot && composer {{args}}'
     usage: run drush commands in the cli service container.
   exec:
-    cmd: docker exec -it "$(docker-compose ps -q cli)" bash -c '{{args}}'
+    cmd: |
+      if [ -z CIRCLECI ]; then
+        sudo lxc-attach -n "$(docker inspect --format='{{.Id}}' `docker-compose ps -q cli`)" -- bash -c '{{args}}'
+      else
+        docker exec -it "$(docker-compose ps -q cli)" bash -c '{{args}}'
+      fi
     usage: run drush commands in the cli service container.
   mysql:
     cmd: "docker exec -it $(docker-compose ps -q cli) bash -c 'mysql -u$DB_ENV_MYSQL_USER -p$DB_ENV_MYSQL_PASSWORD -h$DB_PORT_3306_TCP_ADDR $DB_ENV_MYSQL_DATABASE'"
