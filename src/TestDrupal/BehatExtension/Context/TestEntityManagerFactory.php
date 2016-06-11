@@ -9,10 +9,22 @@ use Symfony\Component\Config\Definition\Exception\Exception;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 
 
+
+class TestEntityManagerFactory extends RawTestDrupalContext {
+
+  public function create($make, $model)
+  {
+    $manager = new TestEntityManager($make, $model);
+    $manager->setBehatContext($this);
+    return $manager;
+  }
+}
+
+
 /**
  * Defines application features from the specific context.
  */
-class RawTestDrupalEntityContext extends RawTestDrupalContext {
+class TestEntityManager {
 
   // Store entities as EntityMetadataEntitys for easy property inspection.
   //protected $entities = array();
@@ -22,6 +34,7 @@ class RawTestDrupalEntityContext extends RawTestDrupalContext {
   protected $bundle_key = FALSE;
   protected $field_map = array();
   protected $field_properties = array();
+  protected $behatContext = array();
 
   /**
    * RawTestDrupalEntityContext constructor.
@@ -34,12 +47,13 @@ class RawTestDrupalEntityContext extends RawTestDrupalContext {
     // EntityManager https://www.drupal.org/node/2549139
 
     $entityManager = \Drupal::entityTypeManager();
-    $entityBundleInfo = \Drupal::getContainer()->get('entity_type.bundle.info')->getBundleInfo($entity_type);;
+    $entityBundleInfo = \Drupal::getContainer()->get('entity_type.bundle.info')->getBundleInfo($entity_type);
     $entityInfo = $entityManager->getDefinition($entity_type);
     $fieldManager = \Drupal::getContainer()->get('entity_field.manager');
 
     $this->entity_type = $entity_type;
     $this->field_properties = array();
+    $this->bundle_key = $entityInfo->getKey('bundle');
 
     // Check that the bundle specified actually exists, or if none given,
     // that this is an entity with no bundles (single bundle w/ name of entity)
@@ -73,7 +87,7 @@ class RawTestDrupalEntityContext extends RawTestDrupalContext {
    * @param AfterScenarioScope $scope
    */
   public function deleteAll(AfterScenarioScope $scope) {
-    $delete_entities = $this->entityStore->retrieve($this->entity_type, $this->bundle);
+    $delete_entities = $this->getBehatContext()->getEntityStore()->retrieve($this->entity_type, $this->bundle);
     $entity_storage = \Drupal::entityTypeManager()
       ->getStorage($this->entity_type);
     if ($delete_entities === false) {
@@ -100,8 +114,8 @@ class RawTestDrupalEntityContext extends RawTestDrupalContext {
     // For Scenarios Outlines, EntityContext is not deleted and recreated
     // and thus the entities array is not deleted and houses stale entities
     // from previous examples, so we clear it here
-    $this->entityStore->delete($this->entity_type, $this->bundle);
-    $this->entityStore->names_flush();
+    $this->getBehatContext()->getEntityStore()->delete($this->entity_type, $this->bundle);
+    $this->getBehatContext()->getEntityStore()->names_flush();
   }
 
   /**
@@ -111,7 +125,7 @@ class RawTestDrupalEntityContext extends RawTestDrupalContext {
    * @return EntityDrupalEntity or FALSE
    */
   public function getByName($name) {
-    return $this->entityStore->retrieve_by_name($name);
+    return $this->getBehatContext()->getEntityStore()->retrieve_by_name($name);
   }
 
   /**
@@ -168,8 +182,8 @@ class RawTestDrupalEntityContext extends RawTestDrupalContext {
 
       $field = $field_info[$field_name];
       $field_type = $field->getType();
-
-      if ($field_info[$field_name]->getCardinality() > 1) {
+      # getCardinality not avaiable for the subject field of forums.
+      if (method_exists($field_info[$field_name], 'getCardinality') && $field_info[$field_name]->getCardinality() > 1) {
         $field_type = $field_info[$field_name]->getItemDefinition()->getDataType();
         $values = $this->explode_list($value);
       }
@@ -191,7 +205,7 @@ class RawTestDrupalEntityContext extends RawTestDrupalContext {
             $entity->$field_name->value = $val;
             break;
           case 'entity_reference':
-            $found_entity = $this->entityStore->retrieve_by_name($val);
+            $found_entity = $this->getBehatContext()->getEntityStore()->retrieve_by_name($val);
             if ($found_entity !== FALSE) {
               $entity->$field_name->entity = $found_entity;
             }
@@ -280,7 +294,7 @@ class RawTestDrupalEntityContext extends RawTestDrupalContext {
               if (empty($name)) {
                 continue;
               }
-              $found_node_entity = $this->entityStore->retrieve_by_name($name);
+              $found_node_entity = $this->getBehatContext()->getEntityStore()->retrieve_by_name($name);
               if ($found_node_entity !== FALSE) {
                 $nids[] = $found_node_entity->nid->value();
               }
@@ -341,7 +355,7 @@ class RawTestDrupalEntityContext extends RawTestDrupalContext {
   public function save($fields) {
     $storage = \Drupal::entityTypeManager()->getStorage($this->entity_type);
     $entity = $storage->create(array(
-      'type' => $this->bundle,
+      $this->bundle_key => $this->bundle,
     ));
     $this->pre_save($entity, $fields);
     $entity->save();
@@ -368,7 +382,7 @@ class RawTestDrupalEntityContext extends RawTestDrupalContext {
         $entity->$field->set($user);
       }
     }
-    $this->dispatchTestDrupalHooks('BeforeTestDrupalEntityCreateScope', $entity, $fields);
+    //$this->dispatchTestDrupalHooks('BeforeTestDrupalEntityCreateScope', $entity, $fields);
     $this->apply_fields($entity, $fields);
   }
 
@@ -379,20 +393,20 @@ class RawTestDrupalEntityContext extends RawTestDrupalContext {
    * @param array $fields
    */
   public function post_save($entity, $fields) {
-    $this->dispatchTestDrupalHooks('AfterTestDrupalEntityCreateScope', $entity, $fields);
+    //$this->dispatchTestDrupalHooks('AfterTestDrupalEntityCreateScope', $entity, $fields);
     // Remove the base url from the url and add it
     // to the page array for easy navigation.
     $url = $entity->toUrl()->toString();
     // Add the url to the page array for easy navigation.
     $page = new Page($entity->label(), $url);
-    $this->getPageStore()->store($page);
+    $this->getBehatContext()->getPageStore()->store($page);
 
     if (isset($fields['date changed'])) {
       $this->setChangedDate($entity, $fields['date changed']);
     }
 
     // Add the created entity to the array so it can be deleted later.
-    $this->entityStore->store($this->entity_type, $this->bundle, $entity->id(), $entity, $entity->label());
+    $this->getBehatContext()->getEntityStore()->store($this->entity_type, $this->bundle, $entity->id(), $entity, $entity->label());
   }
 
   /**
@@ -477,7 +491,7 @@ class RawTestDrupalEntityContext extends RawTestDrupalContext {
    * @param \stdClass $entity
    * @throws
    */
-  protected function dispatchTestDrupalHooks($scopeType, EntityInterface $entity, &$fields) {
+  /*protected function dispatchTestDrupalHooks($scopeType, EntityInterface $entity, &$fields) {
     $fullScopeClass = 'TestDrupal\\BehatExtension\\Hook\\Scope\\' . $scopeType;
     $scope = new $fullScopeClass($this->getDrupal()->getEnvironment(), $this, $entity, $fields);
     $callResults = $this->dispatcher->dispatchScopeHooks($scope);
@@ -489,5 +503,15 @@ class RawTestDrupalEntityContext extends RawTestDrupalContext {
         throw $exception;
       }
     }
+  } */
+
+  public function setBehatContext($behatContext) {
+    $this->behatContext = $behatContext;
+  }
+
+  public function getBehatContext() {
+    return $this->behatContext;
   }
 }
+
+
