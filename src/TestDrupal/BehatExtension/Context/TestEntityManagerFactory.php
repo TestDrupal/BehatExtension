@@ -224,7 +224,7 @@ class TestEntityManager {
             if (gettype($value) == 'string') {
               $value = $this->convertStringToBool($value);
             }
-            $entity->$property->set((bool) $value);
+            $entity->$field_name->set((bool) $value);
             break;
 
           // Dates - handle strings as best we can. See http://php.net/manual/en/datetime.formats.relative.php
@@ -233,7 +233,7 @@ class TestEntityManager {
             if ($timestamp === FALSE) {
               throw new \Exception("Couldn't create a date with '$value'");
             }
-            $entity->$property->set($timestamp);
+            $entity->$field_name->set($timestamp);
             break;
 
           // User reference
@@ -242,18 +242,24 @@ class TestEntityManager {
             if ($user === FALSE) {
               throw new \Exception("Can't find a user with username '$value'");
             }
-            $entity->$property->set($user);
+            $entity->$field_name->set($user);
             break;
 
           // Simple text field.
           case 'text':
-            $entity->$property->set($value);
+            $entity->$field_name->set($value);
             break;
 
           // Formatted text like body
           case 'text_formatted':
+
             // For now just apply the value directly.
-            $entity->$property->set(array('value' => $value));
+            $entity->$field_name->set(array('value' => $value));
+            break;
+
+          case 'text_with_summary':
+            // For now just apply the value directly.
+            $entity->set($field_name, $value);
             break;
 
           case 'taxonomy_term':
@@ -266,56 +272,8 @@ class TestEntityManager {
             else {
               throw new \Exception("Term '$value'' not found for field '$property'");
             }
-            $entity->$property->set($tid);
+            $entity->$field_name->set($tid);
             break;
-
-
-          case "list<taxonomy_term>":
-            // Convert the tags to tids.
-            $tids = array();
-            foreach ($this->explode_list($value) as $term) {
-              if ($found_term = $this->tidFromTermName($property, $term)) {
-                $tids[] = $found_term;
-              }
-              else {
-                throw new \Exception("Term '$term'' not found for field '$property'");
-              }
-            }
-            $entity->$property->set($tids);
-            break;
-
-          /* TODO BELOW */
-
-          // Node reference.
-          case 'node':
-          case 'list<node>':
-            $nids = array();
-            foreach ($this->explode_list($value) as $name) {
-              if (empty($name)) {
-                continue;
-              }
-              $found_node_entity = $this->getBehatContext()->getEntityStore()->retrieve_by_name($name);
-              if ($found_node_entity !== FALSE) {
-                $nids[] = $found_node_entity->nid->value();
-              }
-              else {
-                throw new \Exception("Named Node '$name' not found, was it created during the test?");
-              }
-            }
-            $entity->$property->set($nids);
-            break;
-
-
-            break;
-          // Not sure (something more complex)
-          case 'struct':
-            // Images
-          case 'field_item_image':
-            // Links
-          case 'field_item_link':
-            // Text field formatting?
-          case 'token':
-            // References to nodes
           default:
             // For now, just error out as we can't handle it yet.
             throw new \Exception("Not sure how to handle field '$label' with type '$field_type'");
