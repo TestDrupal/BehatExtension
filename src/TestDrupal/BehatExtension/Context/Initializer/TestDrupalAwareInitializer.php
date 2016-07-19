@@ -10,11 +10,12 @@ use Drupal\DrupalExtension\Context\RawDrupalContext;
 class TestDrupalAwareInitializer extends RawDrupalContext implements ContextInitializer {
   private $entityStore, $pageStore, $parameters;
 
-  public function __construct($entityStore, $pageStore, array $parameters, array $default_contexts_map) {
+  public function __construct($entityStore, $pageStore, $entityManagerFactory, array $parameters, array $default_contexts_map) {
     $this->entityStore = $entityStore;
     $this->pageStore = $pageStore;
     $this->parameters = $parameters;
     $this->default_contexts_map = $default_contexts_map;
+    $this->entityManagerFactory = $entityManagerFactory;
   }
 
   /**
@@ -28,6 +29,7 @@ class TestDrupalAwareInitializer extends RawDrupalContext implements ContextInit
     }
     $context->setEntityStore($this->entityStore);
     $context->setPageStore($this->pageStore);
+    $context->setEntityManagerFactory($this->entityManagerFactory);
 
     // Set the default contexts that should be available.
     if(isset($this->default_contexts_map) && is_array($this->default_contexts_map)) {

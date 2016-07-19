@@ -1,5 +1,5 @@
 <?php
-namespace TestDrupal\BehatExtension\Context;
+namespace TestDrupal\BehatExtension\ServiceContainer;
 
 use Behat\Gherkin\Node\TableNode;
 use Drupal\Core\Entity\EntityInterface;
@@ -12,7 +12,7 @@ use Drupal\Core\Entity\Entity;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
-class TestEntityManagerFactory extends RawTestDrupalContext {
+class EntityManagerFactory extends RawTestDrupalContext {
 
   /**
    * @param $make

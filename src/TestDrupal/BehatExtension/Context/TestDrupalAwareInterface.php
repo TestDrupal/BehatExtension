@@ -22,6 +22,8 @@ interface TestDrupalAwareInterface extends DrupalAwareInterface {
    */
   public function setPageStore(PageStore $store);
 
+  public function setEntityManagerInterface();
+
 
   public function setContextsMap(array $contexts_map);
 

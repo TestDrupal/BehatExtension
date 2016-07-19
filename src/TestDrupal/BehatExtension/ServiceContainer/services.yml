@@ -6,6 +6,7 @@ parameters:
   testdrupal.page_store.class: TestDrupal\BehatExtension\ServiceContainer\PageStore
   testdrupal.drupal_extension.class: Drupal\DrupalExtension\ServiceContainer\DrupalExtension
   testdrupal.listener.stores.class: TestDrupal\BehatExtension\Listener\StoresListener
+  testdrupal.entity_manager_factory.class: TestDrupal\BehatExtension\ServiceContainer\EntityManagerFactory
 
   # Context initializer.
   testdrupal.context.initializer.class: TestDrupal\BehatExtension\Context\Initializer\TestDrupalAwareInitializer
@@ -23,12 +24,16 @@ services:
   testdrupal.page_store:
     class: '%testdrupal.page_store.class%'
 
+  testdrupal.entity_manager_factory:
+    class: '%testdrupal.entity_manager_factory.class%'
+
   # Set our Initializer class so we can inject EntityStore into each EntityAware Context.
   testdrupal.context.initializer:
     class: '%testdrupal.context.initializer.class%'
     arguments:
       - '@testdrupal.entity_store'
       - '@testdrupal.page_store'
+      - '@testdrupal.entity_manager_factory'
       - '%testdrupal.parameters%'
       - '%testdrupal.default_contexts_map%'
     tags:
