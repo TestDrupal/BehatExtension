@@ -17,9 +17,9 @@ Create a composer.json file with the following:
   },
 }
 ```
-Install dependencies: composer install
+Install dependencies: `composer install`
 
-Initialize: behat --init
+Initialize: `behat --init`
 
 Using the TestDrupal Behat Extension
 ====================================
