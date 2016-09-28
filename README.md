@@ -26,4 +26,9 @@ Using the TestDrupal Behat Extension
 
 TODO :)
 
+Sponsors
+=========
+
+[Heliocore](https://heliocore.com)
+
 
