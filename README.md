@@ -7,6 +7,7 @@ Install
 =========
 
 Create a composer.json file with the following:
+```Json
 {
   "require": {
     "testdrupal/behatextension": "dev-master"
@@ -15,6 +16,7 @@ Create a composer.json file with the following:
     "bin-dir": "bin/"
   },
 }
+```
 Install dependencies: composer install
 
 Initialize: behat --init
