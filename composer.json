@@ -5,7 +5,7 @@
     "require": {
         "drupal/drupal-extension": "~3.0",
         "symfony/config": "2.8.6",
-        "symfony/dependency-injection":"2.8.6",
+        "symfony/dependency-injection":"~3",
         "symfony/event-dispatcher":"2.8.6",
         "symfony/css-selector": "2.7.*"
     },
