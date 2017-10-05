@@ -7,7 +7,7 @@
         "symfony/config": "~3",
         "symfony/dependency-injection":"~3",
         "symfony/event-dispatcher":"~3",
-        "symfony/css-selector": "2.7.*"
+        "symfony/css-selector": "~3"
     },
     "require-dev": {
         "devinci/devinci-behat-extension": "dev-master"
